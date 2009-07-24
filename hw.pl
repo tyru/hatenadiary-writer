@@ -224,12 +224,7 @@ sub load_all_main {
         }
 
         # Find entry's name. (http://d.hatena.ne.jp/user/yyyymmdd/name/)
-        my @headlines;
-        my $body = $entry->{body};
-        while ($body =~ s/^\*([^\*]+)\*//m) {
-            print_debug("found headline: $1");
-            push @headlines, $1;
-        }
+        my @headlines = find_headlines($entry->{body});
 
         save_diary_entry({
             year => $year, month => $month, day => $day,
@@ -291,11 +286,11 @@ sub main {
     }
 
     # Process it.
-    for (@files) {
+    for my $file (@files) {
         # Check file name.
-        next unless (/\b(\d\d\d\d)-(\d\d)-(\d\d)(?:-.+)?\.txt$/);
+        next unless ($file =~ /\b(\d\d\d\d)-(\d\d)-(\d\d)(?:-.+)?\.txt$/);
         # Check if it is a file.
-        next unless (-f $_);
+        next unless (-f $file);
 
         my ($year, $month, $day) = ($1, $2, $3);
         my $date = $year . $month . $day;
@@ -304,13 +299,13 @@ sub main {
         login() unless ($user_agent);
 
         # Replace "*t*" unless suppressed.
-        replace_timestamp($_) unless ($cmd_opt{M});
+        replace_timestamp($file) unless ($cmd_opt{M});
 
         # Read title and body.
-        my ($title, $body) = read_title_body($_);
+        my ($title, $body) = read_title_body($file);
 
         # Find image files.
-        my $imgfile = find_image_file($_);
+        my $imgfile = find_image_file($file);
 
         if ($title eq $delete_title) {
             # Delete entry.
@@ -322,6 +317,14 @@ sub main {
             print_message("Post $year-$month-$day.  " . ($imgfile ? " (image: $imgfile)" : ""));
             update_diary_entry($year, $month, $day, $title, $body, $imgfile);
             print_message("Post OK.");
+        }
+
+        # Rename if found new/deleted headlines.
+        my @headline = find_headlines($body);
+        my $newfile = text_filename($year, $month, $day, \@headline);
+        if (basename($file) ne basename($newfile)) {
+            print_message("Rename $file to $newfile");
+            rename $file, $newfile or die "can't rename $file to $newfile:$!";
         }
 
         sleep(1);
@@ -855,6 +858,16 @@ sub load_config() {
         }
     }
     close(CONF);
+}
+ 
+sub find_headlines {
+    my ($body) = @_;
+    my @headline;
+    while ($body =~ s/^\*([^\n\*]+)\*//m) {
+        print_debug("Found headline $1");
+        push @headline, $1;
+    }
+    return @headline;
 }
 
 
