@@ -22,7 +22,7 @@
 #
 use strict;
 use warnings;
-my $VERSION = "1.4.2.3";
+my $VERSION = "1.4.2.4";
 
 use LWP::UserAgent;
 use HTTP::Request::Common;
@@ -266,8 +266,7 @@ sub diff_main {
     close $fh;
 
     my $filename = text_filename($year,$month,$day);
-    my $cmd = "diff $tmpfilename $filename";
-    system $cmd;
+    system("diff", $tmpfilename, $filename);
 }
 
 sub load_drafts_main {
