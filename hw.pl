@@ -22,7 +22,7 @@
 #
 use strict;
 use warnings;
-my $VERSION = "1.4.2.4";
+my $VERSION = "1.4.2.5";
 
 use LWP::UserAgent;
 use HTTP::Request::Common;
@@ -31,6 +31,7 @@ use File::Basename;
 use Getopt::Std;
 use Digest::MD5 qw(md5_base64);
 use File::Temp qw(tempdir tempfile);
+use File::Spec;
 
 my $enable_encode = eval('use Encode; 1');
 
@@ -273,7 +274,6 @@ sub load_drafts_main {
     eval {
         require LWP::Authen::Wsse;
         require XML::TreePP;
-        require File::Spec;    # maybe installed
     };
     if ($@) {
         error_exit("you need to install LWP::Authen::Wsse and XML::TreePP"
@@ -1013,13 +1013,13 @@ sub text_filename($$$;$) {
         return $_ if $datename eq $1
     }
 
-    my $filename = "$txt_dir/$datename.txt";
+    my $filename = File::Spec->catfile($txt_dir, "$datename.txt");
     return $filename;
 }
 
 sub draft_filename($) {
     my ($epoch) = @_;
-    return "$draft_dir/$epoch.txt";
+    return File::Spec->catfile($draft_dir, "$epoch.txt");
 }
 
 sub save_diary_entry($$$$) {
